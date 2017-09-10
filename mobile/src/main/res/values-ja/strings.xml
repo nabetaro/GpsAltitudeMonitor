@@ -1,5 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Gps Altitude Monitor</string>
-    <string name="altitude">Altitude</string>
+    <string name="altitude">高度</string>
     <string name="alt_value">%,3.0f</string>
 </resources>

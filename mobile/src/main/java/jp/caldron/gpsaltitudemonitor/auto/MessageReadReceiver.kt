@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package jp.caldron.gpsaltitudemonitor
+package jp.caldron.gpsaltitudemonitor.auto
 
 import android.content.BroadcastReceiver
 import android.content.Context

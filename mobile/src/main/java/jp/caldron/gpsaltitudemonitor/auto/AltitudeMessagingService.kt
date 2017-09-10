@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package jp.caldron.gpsaltitudemonitor
+package jp.caldron.gpsaltitudemonitor.auto
 
 import android.app.PendingIntent
 import android.app.Service
@@ -27,7 +27,6 @@ import android.support.v4.app.NotificationCompat
 import android.support.v4.app.NotificationCompat.CarExtender
 import android.support.v4.app.NotificationCompat.CarExtender.UnreadConversation
 import android.support.v4.app.NotificationManagerCompat
-import android.support.v4.app.RemoteInput
 
 class AltitudeMessagingService : Service() {
     private val mMessenger = Messenger(IncomingHandler())
@@ -60,23 +59,11 @@ class AltitudeMessagingService : Service() {
                 createIntent(conversationId, READ_ACTION),
                 PendingIntent.FLAG_UPDATE_CURRENT)
 
-        // Build a RemoteInput for receiving voice input in a Car Notification
-        val remoteInput = RemoteInput.Builder(EXTRA_VOICE_REPLY)
-                .setLabel("Reply by voice")
-                .build()
-
-        // Building a Pending Intent for the reply action to trigger
-        val replyIntent = PendingIntent.getBroadcast(applicationContext,
-                conversationId,
-                createIntent(conversationId, REPLY_ACTION),
-                PendingIntent.FLAG_UPDATE_CURRENT)
-
         // Create the UnreadConversation and populate it with the participant name,
         // read and reply intents.
         val unreadConvBuilder = UnreadConversation.Builder(participant)
                 .setLatestTimestamp(timestamp)
                 .setReadPendingIntent(readPendingIntent)
-                .setReplyAction(replyIntent, remoteInput)
 
         val builder = NotificationCompat.Builder(applicationContext)
                 // Set the application notification icon:
