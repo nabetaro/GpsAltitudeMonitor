@@ -25,8 +25,8 @@ import android.util.Log
 class MessageReadReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
-        if (AltitudeMessagingService.READ_ACTION == intent.action) {
-            val conversationId = intent.getIntExtra(AltitudeMessagingService.CONVERSATION_ID, -1)
+        if (AltitudeNotifyService.READ_ACTION == intent.action) {
+            val conversationId = intent.getIntExtra(AltitudeNotifyService.CONVERSATION_ID, -1)
             if (conversationId != -1) {
                 Log.d(TAG, "Conversation $conversationId was read")
                 val notificationManager = NotificationManagerCompat.from(context)

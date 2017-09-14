@@ -28,7 +28,7 @@ import android.support.v4.app.NotificationCompat.CarExtender
 import android.support.v4.app.NotificationCompat.CarExtender.UnreadConversation
 import android.support.v4.app.NotificationManagerCompat
 
-class AltitudeMessagingService : Service() {
+class AltitudeNotifyService : Service() {
     private val mMessenger = Messenger(IncomingHandler())
     private var mNotificationManager: NotificationManagerCompat? = null
 
@@ -97,6 +97,6 @@ class AltitudeMessagingService : Service() {
         val REPLY_ACTION = "jp.caldron.gpsaltitudemonitor.ACTION_MESSAGE_REPLY"
         val CONVERSATION_ID = "conversation_id"
         val EXTRA_VOICE_REPLY = "extra_voice_reply"
-        private val TAG = AltitudeMessagingService::class.java.simpleName
+        private val TAG = AltitudeNotifyService::class.java.simpleName
     }
 }
