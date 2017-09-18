@@ -21,7 +21,7 @@
             android:name="com.google.android.gms.car.application"
             android:resource="@xml/automotive_app_desc" />
 
-        <service android:name=".auto.AltitudeNotifyService"></service>
+        <service android:name=".AltitudeNotifyService"></service>
 
         <receiver android:name=".auto.MessageReadReceiver">
             <intent-filter>

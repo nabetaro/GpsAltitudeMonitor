@@ -40,11 +40,9 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         EventBus.getDefault().register(this)
         super.onResume()
-        altitudeReader.start()
     }
 
     override fun onPause() {
-        altitudeReader.stop()
         EventBus.getDefault().unregister(this)
         super.onPause()
     }
@@ -89,8 +87,7 @@ class MainActivity : AppCompatActivity() {
 
             } else {
                 // それでも拒否された時の対応
-                val toast = Toast.makeText(this, "これ以上なにもできません", Toast.LENGTH_SHORT)
-                toast.show()
+                Toast.makeText(this, "cannot start", Toast.LENGTH_SHORT).show()
             }
         }
     }

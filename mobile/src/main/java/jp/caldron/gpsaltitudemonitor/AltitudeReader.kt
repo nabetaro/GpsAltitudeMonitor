@@ -32,10 +32,12 @@ class AltitudeReader(cont: Context) : LocationListener {
         }
 
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 50F, this)
+        Log.d(TAG, "GPS Location Start")
     }
 
     fun stop() {
         locationManager.removeUpdates(this)
+        Log.d(TAG, "GPS Location Stop")
     }
 
     override fun onStatusChanged(p0: String?, status: Int, p2: Bundle?) {

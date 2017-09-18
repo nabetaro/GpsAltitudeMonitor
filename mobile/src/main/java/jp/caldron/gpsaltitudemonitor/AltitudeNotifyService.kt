@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package jp.caldron.gpsaltitudemonitor.auto
+package jp.caldron.gpsaltitudemonitor
 
 import android.app.PendingIntent
 import android.app.Service
@@ -27,10 +27,17 @@ import android.support.v4.app.NotificationCompat
 import android.support.v4.app.NotificationCompat.CarExtender
 import android.support.v4.app.NotificationCompat.CarExtender.UnreadConversation
 import android.support.v4.app.NotificationManagerCompat
+import android.util.Log
+import jp.caldron.gpsaltitudemonitor.event.NotifyAltitudeEvent
+import jp.caldron.gpsaltitudemonitor.exception.GpsDisabledException
+import org.greenrobot.eventbus.Subscribe
 
 class AltitudeNotifyService : Service() {
+    private val TAG = "Service"
+    private val REQUEST_GPS_PERMISSION = 1000
     private val mMessenger = Messenger(IncomingHandler())
     private var mNotificationManager: NotificationManagerCompat? = null
+    private lateinit var altitudeReader: AltitudeReader
 
     override fun onCreate() {
         mNotificationManager = NotificationManagerCompat.from(applicationContext)
@@ -41,7 +48,28 @@ class AltitudeNotifyService : Service() {
     }
 
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
+        Log.d(TAG, "locationStart()")
+
+        altitudeReader = AltitudeReader(this)
+        try {
+            altitudeReader.start()
+        } catch (e: GpsDisabledException) {
+            Log.d(TAG, "not gpsEnable, startActivity")
+            stopSelf()
+            return Service.START_NOT_STICKY
+        }
         return Service.START_STICKY
+    }
+
+    override fun onDestroy() {
+        altitudeReader.stop()
+        Log.d(TAG, "GPS Location Stop")
+    }
+
+    @Subscribe
+    fun onMessageEvent(event: NotifyAltitudeEvent) {
+        sendNotification(1, getString(R.string.alt_value, event.altitude), "John Doe",
+                System.currentTimeMillis())
     }
 
     private fun createIntent(conversationId: Int, action: String): Intent {
@@ -74,7 +102,7 @@ class AltitudeNotifyService : Service() {
 
                 .setContentText(message)
                 .setWhen(timestamp)
-                .setContentTitle(participant)
+                .setContentTitle(resources.getString(R.string.altitude))
                 .setContentIntent(readPendingIntent)
                 .extend(CarExtender()
                         .setUnreadConversation(unreadConvBuilder.build()))
