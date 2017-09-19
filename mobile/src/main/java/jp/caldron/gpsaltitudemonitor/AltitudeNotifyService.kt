@@ -99,20 +99,18 @@ class AltitudeNotifyService : Service() {
         // アイコン
         builder.setSmallIcon(R.mipmap.ic_launcher)
         builder.setContentTitle(resources.getString(R.string.altitude))
-        builder.setContentText(resources.getString(R.string.alt_value, altitude))
-        builder.setLargeIcon(largeIcon)
-        builder.setWhen(System.currentTimeMillis())
-        // タップするとキャンセル(消える)
-        builder.setAutoCancel(true)
-
-        builder.priority = Notification.PRIORITY_MIN
-
-        builder.setContentTitle(resources.getString(R.string.altitude))
         if (altitude != null) {
             builder.setContentText(resources.getString(R.string.alt_value, altitude))
         } else {
             builder.setContentText("")
         }
+        builder.setLargeIcon(largeIcon)
+        builder.setWhen(timestamp)
+        // タップするとキャンセル(消える)
+        builder.setAutoCancel(true)
+
+        builder.priority = Notification.PRIORITY_MIN
+
 
         builder.setContentIntent(readPendingIntent)
         builder.extend(CarExtender()
