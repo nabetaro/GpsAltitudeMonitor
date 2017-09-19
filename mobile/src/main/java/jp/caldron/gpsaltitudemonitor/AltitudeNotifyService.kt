@@ -9,24 +9,28 @@ import android.os.IBinder
 import android.support.v4.app.NotificationCompat.CarExtender
 import android.support.v4.app.NotificationCompat.CarExtender.UnreadConversation
 import android.support.v4.app.NotificationManagerCompat
+import android.support.v7.app.NotificationCompat
 import android.util.Log
 import android.widget.Toast
 import jp.caldron.gpsaltitudemonitor.event.NotifyAltitudeEvent
 import jp.caldron.gpsaltitudemonitor.exception.GpsDisabledException
+import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 
 class AltitudeNotifyService : Service() {
     private val TAG = "Service"
 
-    private var mNotificationManager: NotificationManagerCompat? = null
+    private lateinit var notificationManager: NotificationManagerCompat
+    private lateinit var notificationBuilder: NotificationCompat.Builder
     private lateinit var altitudeReader: AltitudeReader
 
 
-    private val NOTICE_CONV_ID = 1
+    private val NOTICE_CONV_ID = 0
     private val REQUEST_CODE_MAIN_ACTIVITY = 1001
 
     override fun onCreate() {
-        mNotificationManager = NotificationManagerCompat.from(applicationContext)
+        notificationManager = NotificationManagerCompat.from(applicationContext)
+        notificationBuilder = android.support.v7.app.NotificationCompat.Builder(applicationContext)
     }
 
     override fun onBind(intent: Intent): IBinder? {
@@ -35,11 +39,12 @@ class AltitudeNotifyService : Service() {
 
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
         Log.d(TAG, "locationStart()")
+        EventBus.getDefault().register(this)
 
         altitudeReader = AltitudeReader(this)
         try {
             altitudeReader.start()
-            sendAltitudeNotification(null)
+            createAltitudeNotification()
         } catch (e: GpsDisabledException) {
             Log.d(TAG, "not gpsEnable, startActivity")
             stopSelf()
@@ -51,13 +56,15 @@ class AltitudeNotifyService : Service() {
 
     override fun onDestroy() {
         altitudeReader.stop()
+        EventBus.getDefault().unregister(this)
+        notificationManager.cancel(NOTICE_CONV_ID)
         Toast.makeText(this, "Service stop", Toast.LENGTH_LONG).show()
         Log.d(TAG, "GPS Location Stop")
     }
 
     @Subscribe
     fun onMessageEvent(event: NotifyAltitudeEvent) {
-        sendAltitudeNotification(event.altitude)
+        updateAltitudeNotification(event.altitude)
     }
 
     private fun createIntent(conversationId: Int, action: String): Intent {
@@ -68,9 +75,9 @@ class AltitudeNotifyService : Service() {
     }
 
     /**
-     * 通知
+     * 通知作成
      */
-    private fun sendAltitudeNotification(altitude: Double?) {
+    private fun createAltitudeNotification() {
         val timestamp = System.currentTimeMillis()
         // A pending Intent for reads
         val readPendingIntent = PendingIntent.getBroadcast(applicationContext,
@@ -93,33 +100,32 @@ class AltitudeNotifyService : Service() {
         // LargeIcon の Bitmap を生成
         val largeIcon = BitmapFactory.decodeResource(resources, R.mipmap.ic_launcher)
 
-        // NotificationBuilderを作成
-        val builder = android.support.v7.app.NotificationCompat.Builder(applicationContext)
-        builder.setContentIntent(contentIntent)
+        notificationBuilder.setContentIntent(contentIntent)
         // アイコン
-        builder.setSmallIcon(R.mipmap.ic_launcher)
-        builder.setContentTitle(resources.getString(R.string.altitude))
-        if (altitude != null) {
-            builder.setContentText(resources.getString(R.string.alt_value, altitude))
-        } else {
-            builder.setContentText("")
-        }
-        builder.setLargeIcon(largeIcon)
-        builder.setWhen(timestamp)
-        // タップするとキャンセル(消える)
-        builder.setAutoCancel(true)
+        notificationBuilder.setSmallIcon(R.mipmap.ic_launcher)
+        notificationBuilder.setContentTitle(resources.getString(R.string.altitude))
+        notificationBuilder.setContentText("")
+        notificationBuilder.setLargeIcon(largeIcon)
+        notificationBuilder.setWhen(timestamp)
 
-        builder.priority = Notification.PRIORITY_MIN
+        notificationBuilder.priority = Notification.PRIORITY_MIN
 
 
-        builder.setContentIntent(readPendingIntent)
-        builder.extend(CarExtender()
+        notificationBuilder.setContentIntent(readPendingIntent)
+        notificationBuilder.extend(CarExtender()
                 .setUnreadConversation(unreadConvBuilder.build()))
 
-        // NotificationManagerを取得
-        val manager = NotificationManagerCompat.from(applicationContext)
         // Notificationを作成して通知
-        manager.notify(NOTICE_CONV_ID, builder.build())
+        notificationManager.notify(NOTICE_CONV_ID, notificationBuilder.build())
+    }
+
+    /**
+     * 通知更新
+     */
+    private fun updateAltitudeNotification(altitude: Double?) {
+        notificationBuilder.setContentText(resources.getString(R.string.alt_value, altitude))
+        // Notificationを作成して通知
+        notificationManager.notify(NOTICE_CONV_ID, notificationBuilder.build())
     }
 
     companion object {
