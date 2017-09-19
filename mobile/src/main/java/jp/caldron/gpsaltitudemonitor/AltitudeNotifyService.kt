@@ -1,50 +1,36 @@
-/*
- * Copyright (C) 2014 The Android Open Source Project
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package jp.caldron.gpsaltitudemonitor
 
+import android.app.Notification
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
-import android.os.Handler
+import android.graphics.BitmapFactory
 import android.os.IBinder
-import android.os.Message
-import android.os.Messenger
-import android.support.v4.app.NotificationCompat
 import android.support.v4.app.NotificationCompat.CarExtender
 import android.support.v4.app.NotificationCompat.CarExtender.UnreadConversation
 import android.support.v4.app.NotificationManagerCompat
 import android.util.Log
+import android.widget.Toast
 import jp.caldron.gpsaltitudemonitor.event.NotifyAltitudeEvent
 import jp.caldron.gpsaltitudemonitor.exception.GpsDisabledException
 import org.greenrobot.eventbus.Subscribe
 
 class AltitudeNotifyService : Service() {
     private val TAG = "Service"
-    private val REQUEST_GPS_PERMISSION = 1000
-    private val mMessenger = Messenger(IncomingHandler())
+
     private var mNotificationManager: NotificationManagerCompat? = null
     private lateinit var altitudeReader: AltitudeReader
+
+
+    private val NOTICE_CONV_ID = 1
+    private val REQUEST_CODE_MAIN_ACTIVITY = 1001
 
     override fun onCreate() {
         mNotificationManager = NotificationManagerCompat.from(applicationContext)
     }
 
     override fun onBind(intent: Intent): IBinder? {
-        return mMessenger.binder
+        return null
     }
 
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
@@ -53,23 +39,25 @@ class AltitudeNotifyService : Service() {
         altitudeReader = AltitudeReader(this)
         try {
             altitudeReader.start()
+            sendAltitudeNotification(null)
         } catch (e: GpsDisabledException) {
             Log.d(TAG, "not gpsEnable, startActivity")
             stopSelf()
             return Service.START_NOT_STICKY
         }
+        Toast.makeText(this, "Service start...", Toast.LENGTH_LONG).show()
         return Service.START_STICKY
     }
 
     override fun onDestroy() {
         altitudeReader.stop()
+        Toast.makeText(this, "Service stop", Toast.LENGTH_LONG).show()
         Log.d(TAG, "GPS Location Stop")
     }
 
     @Subscribe
     fun onMessageEvent(event: NotifyAltitudeEvent) {
-        sendNotification(1, getString(R.string.alt_value, event.altitude), "John Doe",
-                System.currentTimeMillis())
+        sendAltitudeNotification(event.altitude)
     }
 
     private fun createIntent(conversationId: Int, action: String): Intent {
@@ -79,52 +67,65 @@ class AltitudeNotifyService : Service() {
                 .putExtra(CONVERSATION_ID, conversationId)
     }
 
-    private fun sendNotification(conversationId: Int, message: String,
-                                 participant: String, timestamp: Long) {
+    /**
+     * 通知
+     */
+    private fun sendAltitudeNotification(altitude: Double?) {
+        val timestamp = System.currentTimeMillis()
         // A pending Intent for reads
         val readPendingIntent = PendingIntent.getBroadcast(applicationContext,
-                conversationId,
-                createIntent(conversationId, READ_ACTION),
+                NOTICE_CONV_ID,
+                createIntent(NOTICE_CONV_ID, READ_ACTION),
                 PendingIntent.FLAG_UPDATE_CURRENT)
 
         // Create the UnreadConversation and populate it with the participant name,
         // read and reply intents.
-        val unreadConvBuilder = UnreadConversation.Builder(participant)
+        val unreadConvBuilder = UnreadConversation.Builder("unread_string")
                 .setLatestTimestamp(timestamp)
                 .setReadPendingIntent(readPendingIntent)
 
-        val builder = NotificationCompat.Builder(applicationContext)
-                // Set the application notification icon:
-                //.setSmallIcon(R.drawable.notification_icon)
 
-                // Set the large icon, for example a picture of the other recipient of the message
-                //.setLargeIcon(personBitmap)
+        // Intent の作成
+        val intent = Intent(this, MainActivity::class.java)
+        val contentIntent = PendingIntent.getActivity(
+                this, REQUEST_CODE_MAIN_ACTIVITY, intent, PendingIntent.FLAG_UPDATE_CURRENT)
 
-                .setContentText(message)
-                .setWhen(timestamp)
-                .setContentTitle(resources.getString(R.string.altitude))
-                .setContentIntent(readPendingIntent)
-                .extend(CarExtender()
-                        .setUnreadConversation(unreadConvBuilder.build()))
+        // LargeIcon の Bitmap を生成
+        val largeIcon = BitmapFactory.decodeResource(resources, R.mipmap.ic_launcher)
 
-        mNotificationManager!!.notify(conversationId, builder.build())
-    }
+        // NotificationBuilderを作成
+        val builder = android.support.v7.app.NotificationCompat.Builder(applicationContext)
+        builder.setContentIntent(contentIntent)
+        // アイコン
+        builder.setSmallIcon(R.mipmap.ic_launcher)
+        builder.setContentTitle(resources.getString(R.string.altitude))
+        builder.setContentText(resources.getString(R.string.alt_value, altitude))
+        builder.setLargeIcon(largeIcon)
+        builder.setWhen(System.currentTimeMillis())
+        // タップするとキャンセル(消える)
+        builder.setAutoCancel(true)
 
-    /**
-     * Handler of incoming messages from clients.
-     */
-    internal inner class IncomingHandler : Handler() {
-        override fun handleMessage(msg: Message) {
-            sendNotification(1, "This is a sample message", "John Doe",
-                    System.currentTimeMillis())
+        builder.priority = Notification.PRIORITY_MIN
+
+        builder.setContentTitle(resources.getString(R.string.altitude))
+        if (altitude != null) {
+            builder.setContentText(resources.getString(R.string.alt_value, altitude))
+        } else {
+            builder.setContentText("")
         }
+
+        builder.setContentIntent(readPendingIntent)
+        builder.extend(CarExtender()
+                .setUnreadConversation(unreadConvBuilder.build()))
+
+        // NotificationManagerを取得
+        val manager = NotificationManagerCompat.from(applicationContext)
+        // Notificationを作成して通知
+        manager.notify(NOTICE_CONV_ID, builder.build())
     }
 
     companion object {
         val READ_ACTION = "jp.caldron.gpsaltitudemonitor.ACTION_MESSAGE_READ"
-        val REPLY_ACTION = "jp.caldron.gpsaltitudemonitor.ACTION_MESSAGE_REPLY"
         val CONVERSATION_ID = "conversation_id"
-        val EXTRA_VOICE_REPLY = "extra_voice_reply"
-        private val TAG = AltitudeNotifyService::class.java.simpleName
     }
 }

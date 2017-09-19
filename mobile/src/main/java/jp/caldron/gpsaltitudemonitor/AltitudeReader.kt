@@ -21,7 +21,7 @@ class AltitudeReader(cont: Context) : LocationListener {
     private lateinit var locationManager: LocationManager
 
     fun start() {
-        Log.d(TAG, "locationStart()")
+        Log.d(TAG, "AltitudeReader start()")
 
         // LocationManager インスタンス生成
         locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
@@ -36,6 +36,7 @@ class AltitudeReader(cont: Context) : LocationListener {
     }
 
     fun stop() {
+        Log.d(TAG, "AltitudeReader stop()")
         locationManager.removeUpdates(this)
         Log.d(TAG, "GPS Location Stop")
     }

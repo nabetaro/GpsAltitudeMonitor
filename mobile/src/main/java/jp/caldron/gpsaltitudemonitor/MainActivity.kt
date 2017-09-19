@@ -29,12 +29,16 @@ class MainActivity : AppCompatActivity() {
         val lat = findViewById(R.id.altitude) as TextView
         lat.text = ""
 
+        val stopBtn = findViewById(R.id.stop_button)
+        stopBtn.setOnClickListener {
+            stopService(Intent(this, AltitudeNotifyService::class.java))
+        }
+
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), REQUEST_GPS_PERMISSION)
         } else {
             locationStart()
         }
-
     }
 
     override fun onResume() {
@@ -53,7 +57,7 @@ class MainActivity : AppCompatActivity() {
         altitudeReader = AltitudeReader(this)
 
         try {
-            altitudeReader.start()
+            startService(Intent(this, AltitudeNotifyService::class.java))
         } catch (e: GpsDisabledException) {
             // GPSを設定するように促す
             val settingsIntent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
@@ -67,6 +71,7 @@ class MainActivity : AppCompatActivity() {
                 return
             }
         }
+
     }
 
     @Subscribe
