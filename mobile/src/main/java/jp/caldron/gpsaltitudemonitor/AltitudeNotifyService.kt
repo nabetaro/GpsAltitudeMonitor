@@ -90,6 +90,7 @@ class AltitudeNotifyService : Service() {
         val unreadConvBuilder = UnreadConversation.Builder("unread_string")
                 .setLatestTimestamp(timestamp)
                 .setReadPendingIntent(readPendingIntent)
+                .addMessage("")
 
 
         // Intent の作成
@@ -123,9 +124,29 @@ class AltitudeNotifyService : Service() {
      * 通知更新
      */
     private fun updateAltitudeNotification(altitude: Double?) {
+        val timestamp = System.currentTimeMillis()
+        // A pending Intent for reads
+        val readPendingIntent = PendingIntent.getBroadcast(applicationContext,
+                NOTICE_CONV_ID,
+                createIntent(NOTICE_CONV_ID, READ_ACTION),
+                PendingIntent.FLAG_UPDATE_CURRENT)
+
+        // Create the UnreadConversation and populate it with the participant name,
+        // read and reply intents.
+        val unreadConvBuilder = UnreadConversation.Builder("unread_string")
+                .setLatestTimestamp(timestamp)
+                .setReadPendingIntent(readPendingIntent)
+                .addMessage("")
+
+
         notificationBuilder.setContentText(resources.getString(R.string.alt_value, altitude))
+        notificationBuilder.setWhen(timestamp)
         // Notificationを作成して通知
         notificationManager.notify(NOTICE_CONV_ID, notificationBuilder.build())
+    }
+
+    private fun addAutoNotification(nManager: NotificationManagerCompat, content: String) {
+
     }
 
     companion object {
