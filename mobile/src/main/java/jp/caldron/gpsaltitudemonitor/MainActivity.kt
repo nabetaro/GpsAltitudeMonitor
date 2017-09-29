@@ -76,6 +76,7 @@ class MainActivity : AppCompatActivity() {
 
     @Subscribe
     fun onMessageEvent(event: NotifyAltitudeEvent) {
+        Log.d(TAG, "Received NotifyAltitudeEvent")
         val lat = findViewById(R.id.altitude) as TextView
         lat.text = getString(R.string.alt_value, event.altitude)
     }

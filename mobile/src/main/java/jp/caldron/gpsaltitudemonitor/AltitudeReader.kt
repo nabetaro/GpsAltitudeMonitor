@@ -53,17 +53,18 @@ class AltitudeReader(cont: Context) : LocationListener {
     }
 
     override fun onLocationChanged(location: Location?) {
+        Log.d(TAG, String.format("Location changed %f,%f,%f",location?.latitude, location?.longitude, location?.altitude))
         // 高度を通知
         val event = NotifyAltitudeEvent(location?.altitude)
         EventBus.getDefault().post(event)
     }
 
     override fun onProviderEnabled(p0: String?) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        Log.d(TAG, "Provider Enabled: " + p0)
     }
 
     override fun onProviderDisabled(p0: String?) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        Log.d(TAG, "Provider Disabled: " + p0)
     }
 
 
